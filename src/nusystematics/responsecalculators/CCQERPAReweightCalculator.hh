@@ -36,6 +36,8 @@ namespace nusyst {
     std::map<int, double> y_FirstBinCenter, y_LastBinCenter;
     std::map<int, double> z_FirstBinCenter, z_LastBinCenter;
 
+    double ENuBoundary;
+
   public:
 
     CCQERPAReweightCalculator(fhiclsimple::ParameterSet const &InputManifest) {
@@ -45,35 +47,46 @@ namespace nusyst {
 
     void LoadInputHistograms(fhiclsimple::ParameterSet const &ps);
 
-    double GetRPAReweight(double Enu_GeV, double P_GeV, double CTheta, double parameter_value);
+    double GetRPAReweight(double Enu_GeV, std::array<double, 2> bin_kin, double parameter_value);
+
     std::string GetCalculatorName() const { return "CCQERPAReweightCalculator"; }
 
   };
 
-  inline double CCQERPAReweightCalculator::GetRPAReweight(double Enu_GeV, double P_GeV, double CTheta, double parameter_value){
+  inline double CCQERPAReweightCalculator::GetRPAReweight(double Enu_GeV, std::array<double, 2> bin_kin, double parameter_value){
+  //inline double CCQERPAReweightCalculator::GetRPAReweight(double Enu_GeV, double kin_Y, double kin_Z, double parameter_value){
 
-    int enu_range = (Enu_GeV<2.1) ? 0 : 1;
+    int enu_range = (Enu_GeV<ENuBoundary) ? 0 : 1;
 
-    //printf("[CCQERPAReweightCalculator::GetRPAReweight] (Enu_GeV, P_GeV, CTheta) = (%1.3f, %1.3f, %1.3f), enu_range = %d\n", Enu_GeV, P_GeV, CTheta, enu_range);
+    //printf("[CCQERPAReweightCalculator::GetRPAReweight] (Enu_GeV, kin_Y, kin_Z) = (%1.3f, %1.3f, %1.3f), enu_range = %d\n", Enu_GeV, bin_kin[0], kin_Z, enu_range);
 
     static double Enu_GeV_epsil = 1E-6;
     double Enu_GeV_ForInterp = Enu_GeV;
     Enu_GeV_ForInterp = std::max( Enu_GeV_ForInterp, x_FirstBinCenter[enu_range] + Enu_GeV_epsil );
     Enu_GeV_ForInterp = std::min( Enu_GeV_ForInterp, x_LastBinCenter[enu_range] - Enu_GeV_epsil );
 
-    static double P_GeV_epsil = 1E-6;
-    double P_GeV_ForInterp = P_GeV;
-    P_GeV_ForInterp = std::max( P_GeV_ForInterp, y_FirstBinCenter[enu_range] + P_GeV_epsil );
-    P_GeV_ForInterp = std::min( P_GeV_ForInterp, y_LastBinCenter[enu_range] - P_GeV_epsil );
+    static double kin_Y_epsil = 1E-6;
+    double kin_Y_ForInterp = bin_kin[0];
+    kin_Y_ForInterp = std::max( kin_Y_ForInterp, y_FirstBinCenter[enu_range] + kin_Y_epsil );
+    kin_Y_ForInterp = std::min( kin_Y_ForInterp, y_LastBinCenter[enu_range] - kin_Y_epsil );
 
-    static double CTheta_epsil = 1E-6;
-    double CTheta_ForInterp = CTheta;
-    CTheta_ForInterp = std::max( CTheta_ForInterp, z_FirstBinCenter[enu_range] + CTheta_epsil );
-    CTheta_ForInterp = std::min( CTheta_ForInterp, z_LastBinCenter[enu_range] - CTheta_epsil );
+    static double kin_Z_epsil = 1E-6;
+    double kin_Z_ForInterp = bin_kin[1];
+    kin_Z_ForInterp = std::max( kin_Z_ForInterp, z_FirstBinCenter[enu_range] + kin_Z_epsil );
+    kin_Z_ForInterp = std::min( kin_Z_ForInterp, z_LastBinCenter[enu_range] - kin_Z_epsil );
 
-    //printf("[CCQERPAReweightCalculator::GetRPAReweight] -> (Enu_GeV, P_GeV, CTheta) = (%1.3f, %1.3f, %1.3f)\n", Enu_GeV_ForInterp, P_GeV_ForInterp, CTheta_ForInterp);
-    double xsec_WithRPA = map_ENuRange_to_WithRPAXSec[enu_range]->Interpolate(Enu_GeV_ForInterp, P_GeV_ForInterp, CTheta_ForInterp); // CV
-    double xsec_WithoutRPA = map_ENuRange_to_WithoutRPAXSec[enu_range]->Interpolate(Enu_GeV_ForInterp, P_GeV_ForInterp, CTheta_ForInterp);
+    //printf("[CCQERPAReweightCalculator::GetRPAReweight] -> (Enu_GeV, kin_Y, kin_Z) = (%1.3f, %1.3f, %1.3f)\n", Enu_GeV_ForInterp, kin_Y_ForInterp, kin_Z_ForInterp);
+    double xsec_WithRPA = map_ENuRange_to_WithRPAXSec[enu_range]->Interpolate(Enu_GeV_ForInterp, kin_Y_ForInterp, kin_Z_ForInterp); // CV
+    double xsec_WithoutRPA = map_ENuRange_to_WithoutRPAXSec[enu_range]->Interpolate(Enu_GeV_ForInterp, kin_Y_ForInterp, kin_Z_ForInterp);
+
+    //printf("[CCQERPAReweightCalculator::GetRPAReweight] xsec (With RPA, Without RPA) = (%1.3f, %1.3e)\n", xsec_WithRPA, xsec_WithoutRPA);
+
+    if(xsec_WithRPA==0.){
+      printf("[CCQERPAReweightCalculator::GetRPAReweight] Zero cross section for\n");
+      printf("[CCQERPAReweightCalculator::GetRPAReweight] (Enu_GeV, kin_Y, kin_Z) = (%1.3f, %1.3f, %1.3f), enu_range = %d\n", Enu_GeV, bin_kin[0], bin_kin[1], enu_range);
+      printf("[CCQERPAReweightCalculator::GetRPAReweight] -> (Enu_GeV, kin_Y, kin_Z) = (%1.3f, %1.3f, %1.3f)\n", Enu_GeV_ForInterp, kin_Y_ForInterp, kin_Z_ForInterp);
+      return 1.;
+    }
 
     double weight = ( xsec_WithRPA * (1.-parameter_value) + xsec_WithoutRPA * parameter_value ) / xsec_WithRPA;
 
@@ -81,9 +94,11 @@ namespace nusyst {
 
     if(weight!=weight){
 
-      printf("[CCQERPAReweightCalculator::GetRPAReweight] (Enu_GeV, P_GeV, CTheta) = (%1.3f, %1.3f, %1.3f), enu_range = %d\n", Enu_GeV, P_GeV, CTheta, enu_range);
-      printf("[CCQERPAReweightCalculator::GetRPAReweight] -> (Enu_GeV, P_GeV, CTheta) = (%1.3f, %1.3f, %1.3f)\n", Enu_GeV_ForInterp, P_GeV_ForInterp, CTheta_ForInterp);
-      std::cout << "[CCQERPAReweightCalculator] weight = " << weight << std::endl;
+      printf("[CCQERPAReweightCalculator::GetRPAReweight] Nan weight for\n"); 
+      printf("[CCQERPAReweightCalculator::GetRPAReweight] (Enu_GeV, kin_Y, kin_Z) = (%1.3f, %1.3f, %1.3f), enu_range = %d\n", Enu_GeV, bin_kin[0], bin_kin[1], enu_range);
+      printf("[CCQERPAReweightCalculator::GetRPAReweight] -> (Enu_GeV, kin_Y, kin_Z) = (%1.3f, %1.3f, %1.3f)\n", Enu_GeV_ForInterp, kin_Y_ForInterp, kin_Z_ForInterp);
+      weight = 1.;
+
     }
 
     return weight;
@@ -93,6 +108,8 @@ namespace nusyst {
   inline void CCQERPAReweightCalculator::LoadInputHistograms(fhiclsimple::ParameterSet const &ps) {
 
     std::string const &default_root_file = ps.get<std::string>("input_file", "");
+    ENuBoundary = ps.get<double>("ENuBoundary");
+    printf("[CCQERPAReweightCalculator::GetRPAReweight] ENuBoundary = %1.2f\n", ENuBoundary);
 
     for (fhiclsimple::ParameterSet const &val_config :
          ps.get<std::vector<fhiclsimple::ParameterSet>>("inputs")) {
@@ -102,11 +119,11 @@ namespace nusyst {
 
       // if it does not start with "/", find it under ${NUSYSTEMATICS_FQ_DIR}/data/
       if(input_file.find("/")!=0){
-        std::string tmp_NUSYSTEMATICS_FQ_DIR = std::getenv("NUSYSTEMATICS_FQ_DIR");
-        if(tmp_NUSYSTEMATICS_FQ_DIR==""){
-          throw invalid_CCQE_RPA_FILEPATH() << "[ERROR]: ${NUSYSTEMATICS_FQ_DIR} not set but put relative path:" << input_file;
+        std::string tmp_NUSYSTEMATICS_ROOT = std::getenv("nusystematics_ROOT");
+        if(tmp_NUSYSTEMATICS_ROOT==""){
+          throw invalid_CCQE_RPA_FILEPATH() << "[ERROR]: ${nusystematics_ROOT} not set but put relative path:" << input_file;
         }
-        input_file = tmp_NUSYSTEMATICS_FQ_DIR+"/data/"+input_file;
+        input_file = tmp_NUSYSTEMATICS_ROOT+"/data/"+input_file;
       }
 
       if(hName=="LowE_WithRPA"){

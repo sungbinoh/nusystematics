@@ -16,6 +16,14 @@
 
 class CCQERPAReweight : public nusyst::IGENIESystProvider_tool {
 
+  enum RWMode {
+    NONE = 0,
+    q3q0 = 1,
+    PCTheta = 2,
+    PSTheta = 3,
+    PTheta = 4
+  };
+
   std::unique_ptr<nusyst::CCQERPAReweightCalculator> ccqeRPAReweightCalculator;
 
 public:
@@ -37,6 +45,7 @@ public:
 private:
 
   fhiclsimple::ParameterSet tool_options;
+  RWMode rwMode;
 
   size_t ResponseParameterIdx;
 

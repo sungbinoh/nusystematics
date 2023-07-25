@@ -37,12 +37,6 @@ SystMetaData CCQERPAReweight::BuildSystMetaData(ParameterSet const &cfg,
   // OPTION_IN_CONF_FILE can be defined in the configuration file
   // then it is copied to tool_option when running "GenerateSystProviderConfig" to generation paramHeader
 
-  std::string OPT_STRING = cfg.get<std::string>("OPT_STRING", ""); // second argument is the default when OPT_STRING does not exist
-  tool_options.put("OPT_STRING", OPT_STRING);
-
-  bool OPT_BOOL = cfg.get<bool>("OPT_BOOL", false);
-  tool_options.put("OPT_BOOL", OPT_BOOL);
-
   fill_valid_tree = cfg.get<bool>("fill_valid_tree", false);
   tool_options.put("fill_valid_tree", fill_valid_tree);
 
@@ -52,15 +46,31 @@ SystMetaData CCQERPAReweight::BuildSystMetaData(ParameterSet const &cfg,
 bool CCQERPAReweight::SetupResponseCalculator(
     fhiclsimple::ParameterSet const &tool_options) {
 
-  std::cout << "[CCQERPAReweight::SetupResponseCalculator] OPT_STRING = " << tool_options.get<std::string>("OPT_STRING") << std::endl;
-  std::cout << "[CCQERPAReweight::SetupResponseCalculator] OPT_BOOL = " << tool_options.get<bool>("OPT_BOOL") << std::endl;
+  fhiclsimple::ParameterSet templateManifest =
+      tool_options.get<fhiclsimple::ParameterSet>("CCQERPAReweight_input_manifest");
 
-  ccqeRPAReweightCalculator = std::make_unique<CCQERPAReweightCalculator>(
-    tool_options.get<fhiclsimple::ParameterSet>("CCQE_RPA_input_manifest")
-  );
+  ccqeRPAReweightCalculator = std::make_unique<CCQERPAReweightCalculator>( templateManifest );
 
   ResponseParameterIdx =
       GetParamIndex(GetSystMetaData(), "CCQERPAReweight");
+
+  std::string rwmode_str = templateManifest.get<std::string>("RWMode");
+  if(rwmode_str=="q3q0"){
+    rwMode = q3q0;
+  }
+  else if(rwmode_str=="PCTheta"){
+    rwMode = PCTheta;
+  }
+  else if(rwmode_str=="PSTheta"){
+    rwMode = PSTheta;
+  }
+  else if(rwmode_str=="PTheta"){
+    rwMode = PTheta;
+  }
+  else{
+    throw invalid_ToolConfigurationFHiCL()
+        << "[ERROR]: RWMode is wrong: " << rwmode_str;
+  }
 
   fill_valid_tree = tool_options.get<bool>("fill_valid_tree", false);
   if (fill_valid_tree) {
@@ -96,6 +106,26 @@ CCQERPAReweight::GetEventResponse(genie::EventRecord const &ev) {
 
   double AngleLeps = FSLepP4.Vect().Angle( ISLepP4.Vect() );
   double CAngleLeps = TMath::Cos(AngleLeps);
+  double SAngleLeps = TMath::Sin(AngleLeps);
+  if(AngleLeps>=M_PI/2.) SAngleLeps *= -1.;
+
+  std::array<double, 2> bin_kin;
+  if(rwMode==q3q0){
+    bin_kin = {emTransfer.Vect().Mag(), emTransfer.E()};
+  }
+  else if(rwMode==PCTheta){
+    bin_kin = {FSLepP4.Vect().Mag(), CAngleLeps};
+  }
+  else if(rwMode==PSTheta){
+    bin_kin = {FSLepP4.Vect().Mag(), SAngleLeps};
+  }
+  else if(rwMode==PTheta){
+    bin_kin = {FSLepP4.Vect().Mag(), AngleLeps};
+  }
+  else{
+    throw invalid_ToolConfigurationFHiCL() 
+        << "[ERROR]: RWMode is wrong: " << rwMode;
+  }
 
   // now make the output
   systtools::event_unit_response_t resp;
@@ -106,8 +136,7 @@ CCQERPAReweight::GetEventResponse(genie::EventRecord const &ev) {
   for (double var : hdr.paramVariations) {
     double this_reweight = ccqeRPAReweightCalculator->GetRPAReweight( 
       ISLepP4.E(),
-      FSLepP4.Vect().Mag(),
-      CAngleLeps,
+      bin_kin,
       var
     );
     resp.back().responses.push_back( this_reweight );
@@ -148,7 +177,7 @@ std::string CCQERPAReweight::AsString() { return ""; }
 
 void CCQERPAReweight::InitValidTree() {
 
-  valid_file = new TFile("MINERvAq0q3WeightValid.root", "RECREATE");
+  valid_file = new TFile("MINERvAq3q0WeightValid.root", "RECREATE");
   valid_tree = new TTree("valid_tree", "");
 
   valid_tree->Branch("NEUTMode", &NEUTMode);

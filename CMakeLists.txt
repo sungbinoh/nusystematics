@@ -64,6 +64,8 @@ install(TARGETS
 
 add_subdirectory(src/nusystematics)
 
+add_subdirectory(data)
+
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     "${PROJECT_BINARY_DIR}/nusystematicsConfigVersion.cmake"
