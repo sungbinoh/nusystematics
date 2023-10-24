@@ -9,8 +9,6 @@
 
 #include "systematicstools/utility/ParameterAndProviderConfigurationUtility.hh"
 
-#include "fhiclcppsimple/make_ParameterSet.h"
-
 #include "Framework/EventGen/EventRecord.h"
 
 #include "TFile.h"
@@ -48,7 +46,7 @@ public:
     return syst_providers;
   };
 
-  void LoadProvidersAndHeaders(fhiclsimple::ParameterSet const &ps) {
+  void LoadProvidersAndHeaders(fhicl::ParameterSet const &ps) {
     syst_providers = systtools::ConfigureISystProvidersFromParameterHeaders<
         IGENIESystProvider_tool>(ps, make_instance);
     
@@ -72,9 +70,11 @@ public:
   void LoadConfiguration(std::string const &fhicl_config_filename) {
     config_file = fhicl_config_filename;
 
-    fhiclsimple::ParameterSet ps = fhiclsimple::make_ParameterSet(config_file);
+    // TODO
+    std::unique_ptr<cet::filepath_maker> fm = std::make_unique<cet::filepath_maker>();
+    fhicl::ParameterSet ps = fhicl::ParameterSet::make(config_file, *fm);
 
-    LoadProvidersAndHeaders(ps.get<fhiclsimple::ParameterSet>(
+    LoadProvidersAndHeaders(ps.get<fhicl::ParameterSet>(
         "generated_systematic_provider_configuration"));
 
     ProfilerRate = ps.get<size_t>("ProfileRate", 0);
