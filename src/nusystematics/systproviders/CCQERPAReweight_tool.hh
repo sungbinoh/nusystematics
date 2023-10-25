@@ -27,13 +27,13 @@ class CCQERPAReweight : public nusyst::IGENIESystProvider_tool {
   std::unique_ptr<nusyst::CCQERPAReweightCalculator> ccqeRPAReweightCalculator;
 
 public:
-  explicit CCQERPAReweight(fhiclsimple::ParameterSet const &);
+  explicit CCQERPAReweight(fhicl::ParameterSet const &);
 
-  bool SetupResponseCalculator(fhiclsimple::ParameterSet const &);
+  bool SetupResponseCalculator(fhicl::ParameterSet const &);
 
-  fhiclsimple::ParameterSet GetExtraToolOptions() { return tool_options; }
+  fhicl::ParameterSet GetExtraToolOptions() { return tool_options; }
 
-  systtools::SystMetaData BuildSystMetaData(fhiclsimple::ParameterSet const &,
+  systtools::SystMetaData BuildSystMetaData(fhicl::ParameterSet const &,
                                             systtools::paramId_t);
 
   systtools::event_unit_response_t GetEventResponse(genie::EventRecord const &);
@@ -44,7 +44,7 @@ public:
 
 private:
 
-  fhiclsimple::ParameterSet tool_options;
+  fhicl::ParameterSet tool_options;
   RWMode rwMode;
 
   size_t ResponseParameterIdx;

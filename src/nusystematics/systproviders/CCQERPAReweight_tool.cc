@@ -10,7 +10,7 @@
 
 using namespace systtools;
 using namespace nusyst;
-using namespace fhiclsimple;
+using namespace fhicl;
 
 CCQERPAReweight::CCQERPAReweight(ParameterSet const &params)
     : IGENIESystProvider_tool(params),
@@ -21,17 +21,19 @@ CCQERPAReweight::CCQERPAReweight(ParameterSet const &params)
 SystMetaData CCQERPAReweight::BuildSystMetaData(ParameterSet const &cfg,
                                                      paramId_t firstId) {
 
+  std::cout << "[CCQERPAReweight::BuildSystMetaData] called" << std::endl;
+
   SystMetaData smd;
 
   systtools::SystParamHeader phdr;
-  if (ParseFHiCLSimpleToolConfigurationParameter(cfg, "CCQERPAReweight",
+  if (ParseFhiclToolConfigurationParameter(cfg, "CCQERPAReweight",
                                                  phdr, firstId)) {
     phdr.systParamId = firstId++;
     smd.push_back(phdr);
   }
 
-  fhiclsimple::ParameterSet templateManifest =
-      cfg.get<fhiclsimple::ParameterSet>("CCQERPAReweight_input_manifest");
+  fhicl::ParameterSet templateManifest =
+      cfg.get<fhicl::ParameterSet>("CCQERPAReweight_input_manifest");
   tool_options.put("CCQERPAReweight_input_manifest", templateManifest);
 
   // OPTION_IN_CONF_FILE can be defined in the configuration file
@@ -44,33 +46,50 @@ SystMetaData CCQERPAReweight::BuildSystMetaData(ParameterSet const &cfg,
 }
 
 bool CCQERPAReweight::SetupResponseCalculator(
-    fhiclsimple::ParameterSet const &tool_options) {
+    fhicl::ParameterSet const &tool_options) {
 
-  fhiclsimple::ParameterSet templateManifest =
-      tool_options.get<fhiclsimple::ParameterSet>("CCQERPAReweight_input_manifest");
+  std::cout << "[CCQERPAReweight::SetupResponseCalculator] called" << std::endl;
 
-  ccqeRPAReweightCalculator = std::make_unique<CCQERPAReweightCalculator>( templateManifest );
-
-  ResponseParameterIdx =
-      GetParamIndex(GetSystMetaData(), "CCQERPAReweight");
+  fhicl::ParameterSet templateManifest =
+      tool_options.get<fhicl::ParameterSet>("CCQERPAReweight_input_manifest");
 
   std::string rwmode_str = templateManifest.get<std::string>("RWMode");
+  std::string kin_Y_str(""), kin_Z_str("");
   if(rwmode_str=="q3q0"){
     rwMode = q3q0;
+    kin_Y_str = "q3";
+    kin_Z_str = "q0";
   }
   else if(rwmode_str=="PCTheta"){
     rwMode = PCTheta;
+    kin_Y_str = "P";
+    kin_Z_str = "CTheta";
   }
   else if(rwmode_str=="PSTheta"){
     rwMode = PSTheta;
+    kin_Y_str = "P";
+    kin_Z_str = "STheta";
   }
   else if(rwmode_str=="PTheta"){
     rwMode = PTheta;
+    kin_Y_str = "P";
+    kin_Z_str = "Theta";
   }
   else{
     throw invalid_ToolConfigurationFHiCL()
         << "[ERROR]: RWMode is wrong: " << rwmode_str;
   }
+
+  std::cout << "[CCQERPAReweight::SetupResponseCalculator] RWMode: " << rwmode_str << std::endl;
+  std::cout << "[CCQERPAReweight::SetupResponseCalculator] Template binnings are" << std::endl;
+  std::cout << "[CCQERPAReweight::SetupResponseCalculator] x: E_nu" << std::endl;
+  std::cout << "[CCQERPAReweight::SetupResponseCalculator] y: " << kin_Y_str << std::endl;
+  std::cout << "[CCQERPAReweight::SetupResponseCalculator] z: " << kin_Z_str << std::endl;
+
+  ccqeRPAReweightCalculator = std::make_unique<CCQERPAReweightCalculator>( templateManifest );
+
+  ResponseParameterIdx =
+      GetParamIndex(GetSystMetaData(), "CCQERPAReweight");
 
   fill_valid_tree = tool_options.get<bool>("fill_valid_tree", false);
   if (fill_valid_tree) {

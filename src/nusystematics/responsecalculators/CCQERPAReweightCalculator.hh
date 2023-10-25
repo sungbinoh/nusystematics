@@ -8,7 +8,7 @@
 #include "systematicstools/utility/ROOTUtility.hh"
 #include "systematicstools/utility/exceptions.hh"
 
-#include "fhiclcppsimple/ParameterSet.h"
+#include "fhiclcpp/ParameterSet.h"
 
 #include "TH1.h"
 #include "TH2.h"
@@ -40,12 +40,12 @@ namespace nusyst {
 
   public:
 
-    CCQERPAReweightCalculator(fhiclsimple::ParameterSet const &InputManifest) {
+    CCQERPAReweightCalculator(fhicl::ParameterSet const &InputManifest) {
       LoadInputHistograms(InputManifest);
     }
     ~CCQERPAReweightCalculator(){}
 
-    void LoadInputHistograms(fhiclsimple::ParameterSet const &ps);
+    void LoadInputHistograms(fhicl::ParameterSet const &ps);
 
     double GetRPAReweight(double Enu_GeV, std::array<double, 2> bin_kin, double parameter_value);
 
@@ -82,9 +82,11 @@ namespace nusyst {
     //printf("[CCQERPAReweightCalculator::GetRPAReweight] xsec (With RPA, Without RPA) = (%1.3f, %1.3e)\n", xsec_WithRPA, xsec_WithoutRPA);
 
     if(xsec_WithRPA==0.){
+/*
       printf("[CCQERPAReweightCalculator::GetRPAReweight] Zero cross section for\n");
       printf("[CCQERPAReweightCalculator::GetRPAReweight] (Enu_GeV, kin_Y, kin_Z) = (%1.3f, %1.3f, %1.3f), enu_range = %d\n", Enu_GeV, bin_kin[0], bin_kin[1], enu_range);
       printf("[CCQERPAReweightCalculator::GetRPAReweight] -> (Enu_GeV, kin_Y, kin_Z) = (%1.3f, %1.3f, %1.3f)\n", Enu_GeV_ForInterp, kin_Y_ForInterp, kin_Z_ForInterp);
+*/
       return 1.;
     }
 
@@ -105,14 +107,14 @@ namespace nusyst {
 
   }
 
-  inline void CCQERPAReweightCalculator::LoadInputHistograms(fhiclsimple::ParameterSet const &ps) {
+  inline void CCQERPAReweightCalculator::LoadInputHistograms(fhicl::ParameterSet const &ps) {
 
     std::string const &default_root_file = ps.get<std::string>("input_file", "");
     ENuBoundary = ps.get<double>("ENuBoundary");
     printf("[CCQERPAReweightCalculator::GetRPAReweight] ENuBoundary = %1.2f\n", ENuBoundary);
 
-    for (fhiclsimple::ParameterSet const &val_config :
-         ps.get<std::vector<fhiclsimple::ParameterSet>>("inputs")) {
+    for (fhicl::ParameterSet const &val_config :
+         ps.get<std::vector<fhicl::ParameterSet>>("inputs")) {
       std::string hName = val_config.get<std::string>("name");
       std::string input_hist = val_config.get<std::string>("input_hist");
       std::string input_file = val_config.get<std::string>("input_file", default_root_file); // If specified per hist, replace it
