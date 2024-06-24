@@ -82,6 +82,21 @@ struct TweakSummaryTree {
   std::vector<int> fsi_pdgs;
   std::vector<int> fsi_codes;
 
+  std::vector<int> par_pdg;
+  std::vector<int> par_1st_mother;
+  std::vector<int> par_last_mother;
+  std::vector<int> par_1st_daughter;
+  std::vector<int> par_last_daughter;
+  std::vector<double> par_px;
+  std::vector<double> par_py;
+  std::vector<double> par_pz;
+  std::vector<double> par_E;
+  std::vector<double> par_M;
+  std::vector<double> par_Vx;
+  std::vector<double> par_Vy;
+  std::vector<double> par_Vz;
+  std::vector<double> par_Vt;
+
   std::vector<int> ntweaks;
   std::vector<std::vector<double>> tweak_branches;
   std::vector<double> paramCVResponses;
@@ -127,6 +142,22 @@ struct TweakSummaryTree {
     t->Branch("EAvail_GeV", &EAvail_GeV, "EAvail_GeV/D");
     t->Branch("fsi_pdgs", "vector<int>", &fsi_pdgs);
     t->Branch("fsi_codes", "vector<int>", &fsi_codes);
+
+    // == Branches for all particles in GHEP event record
+    t->Branch("par_pdg", "vector<int>", &par_pdg);
+    t->Branch("par_1st_mother", "vector<int>", &par_1st_mother);
+    t->Branch("par_last_mother", "vector<int>", &par_last_mother);
+    t->Branch("par_1st_daughter", "vector<int>", &par_1st_daughter);
+    t->Branch("par_last_daughter", "vector<int>", &par_last_daughter);
+    t->Branch("par_px", "vector<double>", &par_px);
+    t->Branch("par_py", "vector<double>", &par_py);
+    t->Branch("par_pz", "vector<double>", &par_pz);
+    t->Branch("par_E", "vector<double>", &par_E);
+    t->Branch("par_M", "vector<double>", &par_M);
+    t->Branch("par_Vx", "vector<double>", &par_Vx);
+    t->Branch("par_Vy", "vector<double>", &par_Vy);
+    t->Branch("par_Vz", "vector<double>", &par_Vz);
+    t->Branch("par_Vt", "vector<double>", &par_Vt);
 
     for (paramId_t pid : phh.GetParameters()) { // Need to size vectors first so
                                                 // that realloc doesn't upset
@@ -411,6 +442,21 @@ int main(int argc, char const *argv[]) {
     std::vector<int> fsi_pdgs;
     std::vector<int> fsi_codes;
 
+    std::vector<int> par_pdg;
+    std::vector<int> par_1st_mother;
+    std::vector<int> par_last_mother;
+    std::vector<int> par_1st_daughter;
+    std::vector<int> par_last_daughter;
+    std::vector<double> par_px;
+    std::vector<double> par_py;
+    std::vector<double> par_pz;
+    std::vector<double> par_E;
+    std::vector<double> par_M;
+    std::vector<double> par_Vx;
+    std::vector<double> par_Vy;
+    std::vector<double> par_Vz;
+    std::vector<double> par_Vt;
+
     while ( (p = dynamic_cast<GHepParticle *>(event_iter.Next())) ) {
       ip++;
 
@@ -422,6 +468,21 @@ int main(int argc, char const *argv[]) {
       if(!is_pion && !is_nucleon && !is_kaon){
         continue;
       }
+
+      par_pdg.push_back(p->Pdg());
+      par_1st_mother.push_back(p->FirstMother());
+      par_last_mother.push_back(p->LastMother());
+      par_1st_daughter.push_back(p->FirstDaughter());
+      par_last_daughter.push_back(p->LastDaughter());
+      par_px.push_back(p->Px());
+      par_py.push_back(p->Py());
+      par_pz.push_back(p->Pz());
+      par_E.push_back(p->E());
+      par_M.push_back(p->Mass());
+      par_Vx.push_back(p->Vx());
+      par_Vy.push_back(p->Vy());
+      par_Vz.push_back(p->Vz());
+      par_Vt.push_back(p->Vt());
 
       // Skip particles with code other than 'hadron in the nucleus'
       GHepStatus_t ist  = p->Status();
@@ -442,6 +503,21 @@ int main(int argc, char const *argv[]) {
     } // END particle loop
     tst.fsi_pdgs = fsi_pdgs;
     tst.fsi_codes = fsi_codes;
+
+    tst.par_pdg = par_pdg;
+    tst.par_1st_mother = par_1st_mother;
+    tst.par_last_mother = par_last_mother;
+    tst.par_1st_daughter = par_1st_daughter;
+    tst.par_last_daughter = par_last_daughter;
+    tst.par_px = par_px;
+    tst.par_py = par_py;
+    tst.par_pz = par_pz;
+    tst.par_E = par_E;
+    tst.par_M = par_M;
+    tst.par_Vx = par_Vx;
+    tst.par_Vy = par_Vy;
+    tst.par_Vz = par_Vz;
+    tst.par_Vt = par_Vt;
 
     if (!(ev_it % NToShout)) {
       std::cout << (ev_it ? "\r" : "") << "Event #" << ev_it << "/" << NToRead
