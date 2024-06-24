@@ -83,6 +83,7 @@ struct TweakSummaryTree {
   std::vector<int> fsi_codes;
 
   std::vector<int> par_pdg;
+  std::vector<int> par_status;
   std::vector<int> par_1st_mother;
   std::vector<int> par_last_mother;
   std::vector<int> par_1st_daughter;
@@ -145,6 +146,7 @@ struct TweakSummaryTree {
 
     // == Branches for all particles in GHEP event record
     t->Branch("par_pdg", "vector<int>", &par_pdg);
+    t->Branch("par_status", "vector<int>", &par_status);
     t->Branch("par_1st_mother", "vector<int>", &par_1st_mother);
     t->Branch("par_last_mother", "vector<int>", &par_last_mother);
     t->Branch("par_1st_daughter", "vector<int>", &par_1st_daughter);
@@ -443,6 +445,7 @@ int main(int argc, char const *argv[]) {
     std::vector<int> fsi_codes;
 
     std::vector<int> par_pdg;
+    std::vector<int> par_status;
     std::vector<int> par_1st_mother;
     std::vector<int> par_last_mother;
     std::vector<int> par_1st_daughter;
@@ -465,9 +468,6 @@ int main(int argc, char const *argv[]) {
       bool is_pion    = pdg::IsPion   (pdgc);
       bool is_nucleon = pdg::IsNucleon(pdgc);
       bool is_kaon = pdg::IsKaon( pdgc );
-      if(!is_pion && !is_nucleon && !is_kaon){
-        continue;
-      }
 
       par_pdg.push_back(p->Pdg());
       par_1st_mother.push_back(p->FirstMother());
@@ -486,6 +486,13 @@ int main(int argc, char const *argv[]) {
 
       // Skip particles with code other than 'hadron in the nucleus'
       GHepStatus_t ist  = p->Status();
+      int statusInt = static_cast<int>(ist);
+      par_status.push_back(statusInt);
+
+      if(!is_pion && !is_nucleon && !is_kaon){
+        continue;
+      }
+
       if(ist != kIStHadronInTheNucleus){
         continue;
       }
@@ -505,6 +512,7 @@ int main(int argc, char const *argv[]) {
     tst.fsi_codes = fsi_codes;
 
     tst.par_pdg = par_pdg;
+    tst.par_status = par_status;
     tst.par_1st_mother = par_1st_mother;
     tst.par_last_mother = par_last_mother;
     tst.par_1st_daughter = par_1st_daughter;
